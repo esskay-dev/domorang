@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
+@theme {
+  --color-teal-500: #0a9396;
+  --color-teal-600: #007f82;
+  --color-teal-400: #0eb5b8;
+  --color-teal-50: #e6f7f7;
+  --color-teal-100: #ccefef;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --teal: #0a9396;
+  --teal-dark: #007f82;
+  --teal-light: #e6f7f7;
+  --bg: #d9edf0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* Force the exact teal color everywhere */
+.bg-teal-500 { background-color: #0a9396 !important; }
+.bg-teal-600 { background-color: #007f82 !important; }
+.text-teal-500 { color: #0a9396 !important; }
+.text-teal-600 { color: #0a9396 !important; }
+.border-teal-500 { border-color: #0a9396 !important; }
+.border-teal-600 { border-color: #0a9396 !important; }
+.hover\:bg-teal-600:hover { background-color: #007f82 !important; }
+.hover\:bg-teal-500:hover { background-color: #0a9396 !important; }
+.border-teal-100 { border-color: #ccefef !important; }
+.bg-\[#d9edf0\] { background-color: #d9edf0 !important; }

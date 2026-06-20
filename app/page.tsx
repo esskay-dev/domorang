@@ -19,8 +19,7 @@ export default async function HomePage() {
       <section className="bg-[#d9edf0] px-4 pt-12 pb-0 text-center">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-4">
-            Modern property search and transactions in Abuja.
-          </h1>
+            Modern property search and transactions in Abuja.</h1>
           <p className="text-gray-500 text-base md:text-lg max-w-md mx-auto mb-8">
             Domorang helps people find verified properties, connect with trusted agents, and secure homes across Abuja.
           </p>
@@ -132,7 +131,7 @@ export default async function HomePage() {
           <div>
             <div className="text-xl font-black text-teal-400 mb-3">Domorang</div>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-              A smart proptech platform transforming how people rent, buy, and sell property in Abuja.
+              Domorang is committed to making property transactions safer, more transparent, and more trustworthy. Through rigorous verification, clear information, and accountability-driven processes, we help people find homes and property opportunities with greater confidence.
             </p>
           </div>
           <div>

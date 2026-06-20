@@ -26,3 +26,12 @@
 .hover\:bg-teal-500:hover { background-color: #0a9396 !important; }
 .border-teal-100 { border-color: #ccefef !important; }
 .bg-\[#d9edf0\] { background-color: #d9edf0 !important; }
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}

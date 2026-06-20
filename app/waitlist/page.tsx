@@ -10,26 +10,18 @@ export default function WaitlistPage() {
       {/* HEADER */}
       <header className="flex items-center justify-between px-6 md:px-12 py-6 border-b border-slate-800">
         <div className="text-2xl font-black text-teal-400">Domorang</div>
-        <Link href="/listings" className="text-slate-300 text-sm font-semibold hover:text-white transition">
-          Browse listings →
-        </Link>
       </header>
-
-      {/* TAG STRIP */}
-      <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-4 border-b border-slate-800 text-xs tracking-wider text-slate-500 uppercase">
-        <span>Zero Scams</span><span>◆</span>
-        <span>Trusted Agents</span><span>◆</span>
-        <span>Launching Soon</span><span>◆</span>
-        <span>Maitama</span><span>◆</span>
-        <span>Wuse 2</span><span>◆</span>
-        <span>Gwarinpa</span><span>◆</span>
-        <span>Verified Listings</span><span>◆</span>
-        <span>Abuja FCT</span>
+      {/* TAG STRIP - Moving Marquee */}
+      <div className="overflow-hidden border-y border-slate-800 py-3">
+        <div className="flex whitespace-nowrap animate-marquee gap-3 text-xs tracking-wider text-slate-500 uppercase">
+          <span>Zero Scams ◆ Trusted Agents ◆ Launching Soon ◆ Maitama ◆ Wuse 2 ◆ Gwarinpa ◆ Verified Listings ◆ Abuja FCT ◆</span>
+          <span>Zero Scams ◆ Trusted Agents ◆ Launching Soon ◆ Maitama ◆ Wuse 2 ◆ Gwarinpa ◆ Verified Listings ◆ Abuja FCT ◆</span>
+        </div>
       </div>
 
       {/* HERO */}
-      <section className="px-4 py-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-slate-800/60 border border-slate-700 rounded-full px-5 py-2 mb-10">
+      <section className="px-4 py-16 text-center">
+        <div className="inline-flex items-center gap-2 bg-slate-800/60 border border-slate-700 rounded-full px-5 py-2 mb-8">
           <span className="w-2 h-2 rounded-full bg-teal-400" />
           <span className="text-sm text-slate-300">
             <span className="font-bold text-white">63 people</span> already on the list
@@ -42,7 +34,7 @@ export default function WaitlistPage() {
           Launches.
         </h1>
 
-        <p className="text-slate-400 text-base md:text-lg max-w-xl mx-auto mb-12">
+        <p className="text-slate-400 text-base md:text-lg max-w-xl mx-auto mb-10">
           Early access. Verified listings. No fake agents. Just real homes in Abuja done right.
         </p>
 

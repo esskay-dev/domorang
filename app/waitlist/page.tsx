@@ -24,7 +24,7 @@ export default function WaitlistPage() {
         <div className="inline-flex items-center gap-2 bg-slate-800/60 border border-slate-700 rounded-full px-5 py-2 mb-8">
           <span className="w-2 h-2 rounded-full bg-teal-400" />
           <span className="text-sm text-slate-300">
-            <span className="font-bold text-white">63 people</span> already on the list
+            <span className="font-bold text-white">33 people</span> already on the list
           </span>
         </div>
 

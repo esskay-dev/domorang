@@ -14,8 +14,8 @@ export default function WaitlistPage() {
       {/* TAG STRIP - Moving Marquee */}
       <div className="overflow-hidden border-y border-slate-800 py-3">
         <div className="flex whitespace-nowrap animate-marquee gap-3 text-xs tracking-wider text-slate-500 uppercase">
-          <span>Zero Scams ◆ Trusted Agents ◆ Launching Soon ◆ Maitama ◆ Wuse 2 ◆ Gwarinpa ◆ Verified Listings ◆ Abuja FCT ◆</span>
-          <span>Zero Scams ◆ Trusted Agents ◆ Launching Soon ◆ Maitama ◆ Wuse 2 ◆ Gwarinpa ◆ Verified Listings ◆ Abuja FCT ◆</span>
+          <span>Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆</span>
+          <span>Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆ Launching Soon ◆</span>
         </div>
       </div>
 

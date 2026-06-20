@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "waitlist.domorang.com"
+        }
+      ],
+      "destination": "/waitlist",
+      "permanent": false
+    }
+  ]
+}

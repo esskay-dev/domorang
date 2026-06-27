@@ -1,14 +1,40 @@
 import Navbar from './components/Navbar'
 import ListingCard from './components/ListingCard'
 import Link from 'next/link'
+import { createSupabaseServer } from '../lib/supabase-server'
+import { Home, KeyRound, ClipboardList, Handshake } from 'lucide-react'
+import FeaturedShowcase from './components/FeaturedShowcase'
+
+const PLACEHOLDER_AREAS = ['Garki', 'Lokogoma', 'Gwarinpa', 'Maitama', 'Kubwa']
+const PLACEHOLDER_IMAGES = [
+  'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=500&q=80',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500&q=80',
+  'https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=500&q=80',
+  'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=500&q=80',
+  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&q=80',
+]
+const TARGET_COUNT = 6
 
 export default async function HomePage() {
-  const placeholderListings = [
-    { id: '1', title: '2 Bedroom Apartment', price: 2500000, listing_type: 'rent', bedrooms: 2, bathrooms: 2, size_sqft: 900, area: 'Garki', status: 'verified', images: ['https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=500&q=80'] },
-    { id: '2', title: 'Modern 3 Bedroom Terrace Duplex', price: 75000000, listing_type: 'rent', bedrooms: 3, bathrooms: 3, size_sqft: 1650, area: 'Lokogoma', status: 'verified', images: ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500&q=80'] },
-    { id: '3', title: '3 Bedroom Flat', price: 187000000, listing_type: 'sale', bedrooms: 3, bathrooms: 3, size_sqft: 1500, area: 'Gwarinpa', status: 'verified', images: ['https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=500&q=80'] },
-    { id: '4', title: '4 Bedroom Detached Duplex', price: 320000000, listing_type: 'sale', bedrooms: 4, bathrooms: 4, size_sqft: 2200, area: 'Maitama', status: 'verified', images: ['https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=500&q=80'] },
-    { id: '5', title: 'Self-Contain Studio', price: 1200000, listing_type: 'rent', bedrooms: 1, bathrooms: 1, size_sqft: 450, area: 'Kubwa', status: 'verified', images: ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&q=80'] },
+  const supabase = await createSupabaseServer()
+  const { data: realListings } = await supabase
+    .from('listings')
+    .select('*')
+    .eq('status', 'verified')
+    .order('created_at', { ascending: false })
+    .limit(6)
+
+  const realCount = realListings?.length || 0
+  const placeholdersNeeded = Math.max(0, TARGET_COUNT - realCount)
+
+  const featuredListings = [
+    ...(realListings || []).map(l => ({ ...l, comingSoon: false })),
+    ...PLACEHOLDER_AREAS.slice(0, placeholdersNeeded).map((area, i) => ({
+      id: `stub-${i}`,
+      area,
+      images: [PLACEHOLDER_IMAGES[i % PLACEHOLDER_IMAGES.length]],
+      comingSoon: true,
+    })),
   ]
 
   return (
@@ -19,9 +45,9 @@ export default async function HomePage() {
       <section className="bg-[#d9edf0] px-4 pt-12 pb-0 text-center">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-4">
-            Modern property search and transactions in Abuja.</h1>
+            Search, Find, and Secure Your Next Home in Abuja.</h1>
           <p className="text-gray-500 text-base md:text-lg max-w-md mx-auto mb-8">
-            Domorang helps people find verified properties, connect with trusted agents, and secure homes across Abuja.
+            Browse verified listings and connect directly with trusted landlords and agents.
           </p>
 
           {/* Search Bar */}
@@ -51,36 +77,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED LISTINGS */}
-      <section className="px-4 py-12 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl md:text-3xl font-black text-gray-900">Featured Listings</h2>
+      {/* FEATURED LISTINGS — FLOATING SHOWCASE */}
+      <section className="-mt-12 md:-mt-20 relative z-10 max-w-7xl mx-auto">
+        <FeaturedShowcase listings={featuredListings} />
+        <div className="text-center -mt-8">
           <Link href="/listings" className="text-teal-500 font-semibold text-sm hover:underline">
-            View all →
+            View all listings →
           </Link>
         </div>
-        <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-          {placeholderListings.map(listing => (
-            <div key={listing.id} className="snap-start flex-shrink-0 w-[280px] md:w-[calc(33.333%-14px)]">
-              <ListingCard listing={listing} />
-            </div>
-          ))}
-        </div>
       </section>
-
+      
       {/* SERVICES */}
       <section className="bg-white px-4 py-16">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-black text-gray-900 text-center mb-10">Our Services</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {[
-              { icon: '🏠', title: 'Rent a Home', desc: 'Find verified rental homes across Abuja without the usual stress.', cta: 'Browse Verified Homes', href: '/listings?type=rent' },
-              { icon: '🔑', title: 'Buy a Home', desc: 'Access transparent property details and connect with credible professionals.', cta: 'Explore Homes for Sale', href: '/listings?type=sale' },
-              { icon: '📋', title: 'Sell a Home', desc: 'Showcase your property to a targeted audience actively searching in Abuja.', cta: 'List Your Property', href: '/post-listing' },
-              { icon: '🤝', title: 'Find an Agent', desc: 'Work with verified local agents who know the Abuja market inside out.', cta: 'Connect Now', href: '/agents' },
+              { icon: Home, title: 'Rent a Home', desc: 'Find verified rental homes across Abuja without the usual stress.', cta: 'Browse Verified Homes', href: '/listings?type=rent' },
+              { icon: KeyRound, title: 'Buy a Home', desc: 'Access transparent property details and connect with credible professionals.', cta: 'Explore Homes for Sale', href: '/listings?type=sale' },
+              { icon: ClipboardList, title: 'Sell a Home', desc: 'Showcase your property to a targeted audience actively searching in Abuja.', cta: 'List Your Property', href: '/post-listing' },
+              { icon: Handshake, title: 'Find an Agent', desc: 'Work with verified local agents who know the Abuja market inside out.', cta: 'Connect Now', href: '/agents' },
             ].map((s, i) => (
               <div key={i} className="bg-teal-500 rounded-2xl p-8 text-white text-center">
-                <div className="text-4xl mb-3">{s.icon}</div>
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-white/15 flex items-center justify-center">
+                  <s.icon size={28} strokeWidth={2} />
+                </div>
                 <h3 className="text-lg font-bold mb-2">{s.title}</h3>
                 <p className="text-sm opacity-85 mb-5 leading-relaxed">{s.desc}</p>
                 <Link href={s.href} className="inline-block px-5 py-2 border-2 border-white rounded-full text-sm font-bold hover:bg-white hover:text-teal-600 transition">

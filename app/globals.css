@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-teal-500: #0a9396;
-  --color-teal-600: #007f82;
-  --color-teal-400: #0eb5b8;
-  --color-teal-50: #e6f7f7;
-  --color-teal-100: #ccefef;
+  --color-teal-500: #31768a;
+  --color-teal-600: #245968;
+  --color-teal-400: #3f8da3;
+  --color-teal-50: #eef4f6;
+  --color-teal-100: #d6e5ea;
 }
 
 :root {
@@ -16,16 +16,14 @@
 }
 
 /* Force the exact teal color everywhere */
-.bg-teal-500 { background-color: #0a9396 !important; }
-.bg-teal-600 { background-color: #007f82 !important; }
-.text-teal-500 { color: #0a9396 !important; }
-.text-teal-600 { color: #0a9396 !important; }
-.border-teal-500 { border-color: #0a9396 !important; }
-.border-teal-600 { border-color: #0a9396 !important; }
-.hover\:bg-teal-600:hover { background-color: #007f82 !important; }
-.hover\:bg-teal-500:hover { background-color: #0a9396 !important; }
-.border-teal-100 { border-color: #ccefef !important; }
-.bg-\[#d9edf0\] { background-color: #d9edf0 !important; }
+.bg-teal-500 { background-color: #31768a !important; }
+.bg-teal-600 { background-color: #245968 !important; }
+.text-teal-500 { color: #31768a !important; }
+.text-teal-600 { color: #31768a !important; }
+.border-teal-500 { border-color: #31768a !important; }
+.border-teal-600 { border-color: #31768a !important; }
+.hover\:bg-teal-600:hover { background-color: #245968 !important; }
+.hover\:bg-teal-500:hover { background-color: #31768a !important; }
 
 @keyframes marquee {
   0% { transform: translateX(0); }
@@ -34,4 +32,17 @@
 
 .animate-marquee {
   animation: marquee 25s linear infinite;
+}
+
+@keyframes marquee-cards {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee-cards {
+  animation: marquee-cards 35s linear infinite;
+}
+
+.animate-marquee-cards:hover {
+  animation-play-state: paused;
 }

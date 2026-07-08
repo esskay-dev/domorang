@@ -1,5 +1,6 @@
 import Navbar from '../components/Navbar'
 import ListingCard from '../components/ListingCard'
+import ListingsFilters from '../components/ListingsFilters'
 import { createSupabaseServer } from '../../lib/supabase-server'
 import Link from 'next/link'
 
@@ -8,14 +9,29 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
   const resolvedParams = await searchParams
   const type = resolvedParams?.type || 'all'
 
+  const selectedAreas: string[] = resolvedParams?.area
+    ? String(resolvedParams.area).split(',').filter(Boolean)
+    : []
+  const selectedTypes: string[] = resolvedParams?.ptype
+    ? String(resolvedParams.ptype).split(',').filter(Boolean)
+    : []
+  const minPrice = resolvedParams?.minPrice ? parseInt(resolvedParams.minPrice) : undefined
+  const maxPrice = resolvedParams?.maxPrice ? parseInt(resolvedParams.maxPrice) : undefined
+  const bedroomsParam: string | undefined = resolvedParams?.bedrooms
+
   let query = supabase
     .from('listings')
     .select('*')
     .eq('status', 'verified')
     .order('created_at', { ascending: false })
 
-  if (type !== 'all') {
-    query = query.eq('listing_type', type)
+  if (type !== 'all') query = query.eq('listing_type', type)
+  if (selectedAreas.length) query = query.in('area', selectedAreas)
+  if (minPrice !== undefined) query = query.gte('price', minPrice)
+  if (maxPrice !== undefined) query = query.lte('price', maxPrice)
+  if (bedroomsParam) {
+    if (bedroomsParam === '4+') query = query.gte('bedrooms', 4)
+    else query = query.eq('bedrooms', parseInt(bedroomsParam))
   }
 
   const { data: listings } = await query
@@ -32,14 +48,26 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
     { id: '9', title: '3 Bedroom Semi-Detached', price: 95000000, listing_type: 'sale', bedrooms: 3, bathrooms: 2, size_sqft: 1350, area: 'Lugbe', status: 'verified', images: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80'] },
   ]
 
-  // Filter placeholders by type when no real data exists
-  const filteredPlaceholders = type !== 'all'
-    ? allPlaceholders.filter(l => l.listing_type === type)
-    : allPlaceholders
+  function applyClientFilters(list: any[]) {
+    return list.filter(l => {
+      if (type !== 'all' && l.listing_type !== type) return false
+      if (selectedAreas.length && !selectedAreas.includes(l.area)) return false
+      if (minPrice !== undefined && l.price < minPrice) return false
+      if (maxPrice !== undefined && l.price > maxPrice) return false
+      if (bedroomsParam) {
+        if (bedroomsParam === '4+' && l.bedrooms < 4) return false
+        if (bedroomsParam !== '4+' && l.bedrooms !== parseInt(bedroomsParam)) return false
+      }
+      if (selectedTypes.length && l.property_type && !selectedTypes.includes(l.property_type)) return false
+      return true
+    })
+  }
 
+  const filteredPlaceholders = applyClientFilters(allPlaceholders)
   const displayListings = listings && listings.length > 0 ? listings : filteredPlaceholders
 
   const areas = ['Wuse 2', 'Maitama', 'Garki', 'Gwarinpa', 'Lokogoma', 'Asokoro', 'Kubwa', 'Jabi', 'Lugbe', 'Kado', 'Life Camp']
+  const propertyTypes = ['Flat / Apartment', 'Duplex', 'Bungalow', 'Self Contain', 'Land']
 
   const pageTitle = type === 'rent'
     ? 'Properties for Rent in Abuja'
@@ -57,13 +85,11 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
     <main className="min-h-screen bg-[#d9edf0]">
       <Navbar />
 
-      {/* PAGE HEADER */}
       <div className="bg-[#d9edf0] px-4 pt-8 pb-0">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-1">{pageTitle}</h1>
           <p className="text-gray-500 text-sm mb-4">{pageSubtitle}</p>
 
-          {/* Search + Type Tabs */}
           <div className="flex flex-col sm:flex-row gap-3 pb-6">
             <div className="flex-1 flex items-center bg-white rounded-full shadow-sm px-4 py-2">
               <input
@@ -98,73 +124,13 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
-      {/* MAIN LAYOUT */}
       <div className="max-w-7xl mx-auto px-4 pb-16">
         <div className="flex flex-col lg:flex-row gap-6">
 
-          {/* SIDEBAR */}
           <aside className="lg:w-72 flex-shrink-0">
-            <div className="bg-white rounded-2xl p-5 shadow-sm lg:sticky lg:top-24">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="font-black text-gray-900">Filters</h3>
-                <button className="text-teal-500 text-sm font-semibold">Clear all</button>
-              </div>
-
-              {/* Area */}
-              <div className="mb-5">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Area</div>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {areas.map(area => (
-                    <label key={area} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="accent-teal-500 w-4 h-4" />
-                      <span className="text-sm text-gray-700">{area}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price */}
-              <div className="mb-5">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Price Range (₦)</div>
-                <div className="flex gap-2 items-center">
-                  <input type="number" placeholder="Min" className="w-0 flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500" />
-                  <span className="text-gray-400 text-sm flex-shrink-0">—</span>
-                  <input type="number" placeholder="Max" className="w-0 flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-teal-500" />
-                </div>
-              </div>
-
-              {/* Bedrooms */}
-              <div className="mb-5">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Bedrooms</div>
-                <div className="flex gap-2 flex-wrap">
-                  {['Any', '1', '2', '3', '4+'].map(b => (
-                    <button key={b} className="px-3 py-1.5 rounded-full border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-teal-500 hover:text-teal-500 transition">
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Property Type */}
-              <div className="mb-5">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Property Type</div>
-                <div className="space-y-2">
-                  {['Flat / Apartment', 'Duplex', 'Bungalow', 'Self Contain', 'Land'].map(t => (
-                    <label key={t} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="accent-teal-500 w-4 h-4" />
-                      <span className="text-sm text-gray-700">{t}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <button className="w-full py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
-                Apply Filters
-              </button>
-            </div>
+            <ListingsFilters areas={areas} propertyTypes={propertyTypes} />
           </aside>
 
-          {/* RESULTS */}
           <div className="flex-1">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <p className="text-sm text-gray-600">
@@ -182,7 +148,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
               <div className="bg-white rounded-2xl p-16 text-center">
                 <div className="text-5xl mb-4">🏠</div>
                 <h3 className="font-black text-gray-900 mb-2">No listings found</h3>
-                <p className="text-gray-500 text-sm mb-6">No {type === 'rent' ? 'rental' : 'sale'} properties yet. Check back soon.</p>
+                <p className="text-gray-500 text-sm mb-6">Try adjusting your filters or check back soon.</p>
                 <Link href="/listings" className="px-6 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
                   View All Listings
                 </Link>
@@ -195,7 +161,6 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
               </div>
             )}
 
-            {/* Pagination */}
             {displayListings.length > 0 && (
               <div className="flex justify-center gap-2 mt-10">
                 {[1, 2, 3, 4, 5].map(p => (

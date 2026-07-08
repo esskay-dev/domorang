@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
@@ -7,6 +7,124 @@ import Navbar from '../components/Navbar'
 
 const AREAS = ['Wuse 2','Maitama','Garki','Gwarinpa','Lokogoma','Asokoro','Kubwa','Jabi','Lugbe','Kado','Life Camp','Apo','Gaduwa']
 const AMENITIES = ['24/7 Security','Constant Power','Fitted Kitchen','Borehole Water','Boys Quarters','Swimming Pool','Gym','Prepaid Meter','Pop Ceiling','Tiled Floors','Air Conditioning','Perimeter Fence','Gate House','CCTV','Wi-Fi Ready']
+
+// Abuja area coordinates for map centering
+const AREA_COORDS: Record<string, [number, number]> = {
+  'Wuse 2':    [9.0631, 7.4891],
+  'Maitama':   [9.0820, 7.4836],
+  'Garki':     [9.0442, 7.4855],
+  'Gwarinpa':  [9.1147, 7.3994],
+  'Lokogoma':  [8.9733, 7.4142],
+  'Asokoro':   [9.0372, 7.5122],
+  'Kubwa':     [9.1411, 7.3053],
+  'Jabi':      [9.0785, 7.4303],
+  'Lugbe':     [8.9936, 7.3614],
+  'Kado':      [9.0921, 7.4214],
+  'Life Camp': [9.1001, 7.3861],
+  'Apo':       [8.9974, 7.5103],
+  'Gaduwa':    [8.9625, 7.4531],
+}
+
+// Leaflet map pin picker component
+function MapPinPicker({ area, lat, lng, onChange }: {
+  area: string
+  lat: number | null
+  lng: number | null
+  onChange: (lat: number, lng: number) => void
+}) {
+  const mapRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (mapRef.current) return // already initialized
+
+    // Dynamically import leaflet
+    import('leaflet').then(L => {
+      // Fix default icon path issue with Next.js
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      })
+
+      const center = AREA_COORDS[area] || [9.0579, 7.4951]
+      if (mapRef.current) {
+  mapRef.current.remove()
+  mapRef.current = null
+}
+const map = L.map(containerRef.current!).setView(center, 15)
+      mapRef.current = map
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map)
+
+      // Custom teal pin
+      const tealIcon = L.divIcon({
+        className: '',
+        html: `<div style="
+          width:28px;height:28px;
+          background:#31768a;
+          border:3px solid white;
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          box-shadow:0 2px 8px rgba(0,0,0,0.3)
+        "></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+      })
+
+      // If coords already set, show marker
+      if (lat && lng) {
+        markerRef.current = L.marker([lat, lng], { icon: tealIcon }).addTo(map)
+      }
+
+      map.on('click', (e: any) => {
+        const { lat, lng } = e.latlng
+        onChange(lat, lng)
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng])
+        } else {
+          markerRef.current = L.marker([lat, lng], { icon: tealIcon }).addTo(map)
+        }
+      })
+    })
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+        markerRef.current = null
+      }
+    }
+  }, []) // only on mount
+
+  // Re-center when area changes
+  useEffect(() => {
+    if (!mapRef.current) return
+    const center = AREA_COORDS[area]
+    if (center) mapRef.current.setView(center, 15)
+  }, [area])
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={containerRef}
+        style={{ height: '280px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e5e7eb' }}
+      />
+      {lat && lng ? (
+        <p className="text-xs text-teal-600 font-medium">
+          📍 Pin set: {lat.toFixed(5)}, {lng.toFixed(5)}
+        </p>
+      ) : (
+        <p className="text-xs text-gray-400">Tap anywhere on the map to drop a pin on the exact location.</p>
+      )}
+    </div>
+  )
+}
 
 export default function PostListingPage() {
   const router = useRouter()
@@ -17,6 +135,7 @@ export default function PostListingPage() {
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
+  const [leafletLoaded, setLeafletLoaded] = useState(false)
 
   const [form, setForm] = useState({
     listing_type: 'rent',
@@ -34,7 +153,20 @@ export default function PostListingPage() {
     parking: '',
     description: '',
     video_url: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   })
+
+  // Load Leaflet CSS once
+  useEffect(() => {
+    if (document.getElementById('leaflet-css')) { setLeafletLoaded(true); return }
+    const link = document.createElement('link')
+    link.id = 'leaflet-css'
+    link.rel = 'stylesheet'
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+    link.onload = () => setLeafletLoaded(true)
+    document.head.appendChild(link)
+  }, [])
 
   const handleChange = (e: any) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -63,38 +195,46 @@ export default function PostListingPage() {
   const handleSubmit = async () => {
     setError('')
     setLoading(true)
-
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/signin'); return }
-
-      // Get agent record
-      const { data: profile } = await supabase
-        .from('profiles').select('*').eq('id', user.id).single()
 
       const { data: agent } = await supabase
         .from('agents').select('*').eq('profile_id', user.id).single()
 
       if (!agent) {
-        setError('You need an agent account to post listings. Please sign up as an agent.')
+        setError('You need an agent account to post listings.')
         setLoading(false); return
       }
 
-      // Upload images to Supabase storage
       const imageUrls: string[] = []
-      for (const image of images) {
-        const fileName = `${Date.now()}-${image.name}`
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('listing-images')
-          .upload(fileName, image)
-        if (!uploadError && uploadData) {
-          const { data: urlData } = supabase.storage
-            .from('listing-images').getPublicUrl(fileName)
-          imageUrls.push(urlData.publicUrl)
-        }
-      }
+for (const image of images) {
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${image.name.replace(/\s/g, '-')}`
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('Listing-images')
+    .upload(fileName, image, { cacheControl: '3600', upsert: false })
+  
+  if (uploadError) {
+    console.error('Upload error:', uploadError)
+    setError(`Photo upload failed: ${uploadError.message}`)
+    setLoading(false)
+    return
+  }
+  
+  if (uploadData) {
+    const { data: urlData } = supabase.storage
+      .from('Listing-images')
+      .getPublicUrl(uploadData.path)
+    imageUrls.push(urlData.publicUrl)
+  }
+}
 
-      // Insert listing
+if (imageUrls.length === 0 && images.length > 0) {
+  setError('Photos failed to upload. Please try again.')
+  setLoading(false)
+  return
+}
+
       const { error: insertError } = await supabase.from('listings').insert({
         agent_id: agent.id,
         title: form.title,
@@ -114,7 +254,9 @@ export default function PostListingPage() {
         images: imageUrls,
         video_url: form.video_url,
         inspection_fee: parseFloat(form.inspection_fee) || null,
-        status: 'pending', // goes to admin for verification
+        latitude: form.latitude,
+        longitude: form.longitude,
+        status: 'pending',
       })
 
       if (insertError) { setError(insertError.message); setLoading(false); return }
@@ -125,7 +267,7 @@ export default function PostListingPage() {
     setLoading(false)
   }
 
-  const steps = ['Basic Info', 'Details', 'Photos', 'Review']
+  const steps = ['Basic Info', 'Location Pin', 'Details', 'Photos', 'Review']
 
   if (success) return (
     <main className="min-h-screen bg-[#d9edf0]">
@@ -189,7 +331,6 @@ export default function PostListingPage() {
         {/* STEP 1 — BASIC INFO */}
         {step === 1 && (
           <div className="space-y-4">
-            {/* Listing Type */}
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-black text-gray-900 mb-1">Listing Type</h3>
               <p className="text-gray-500 text-xs mb-4">Is this property for rent or for sale?</p>
@@ -203,7 +344,6 @@ export default function PostListingPage() {
               </div>
             </div>
 
-            {/* Property Info */}
             <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
               <div>
                 <h3 className="font-black text-gray-900 mb-1">Property Information</h3>
@@ -212,7 +352,6 @@ export default function PostListingPage() {
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Listing Title *</label>
                 <input name="title" value={form.title} onChange={handleChange} placeholder="e.g. Modern 3 Bedroom Terrace Duplex in Lokogoma" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-teal-500" />
-                <p className="text-xs text-gray-400 mt-1">Be specific — good titles get more views.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -242,7 +381,6 @@ export default function PostListingPage() {
               </div>
             </div>
 
-            {/* Location */}
             <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
               <div>
                 <h3 className="font-black text-gray-900 mb-1">Location</h3>
@@ -270,8 +408,48 @@ export default function PostListingPage() {
           </div>
         )}
 
-        {/* STEP 2 — DETAILS */}
+        {/* STEP 2 — MAP PIN */}
         {step === 2 && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
+              <div>
+                <h3 className="font-black text-gray-900 mb-1">Pin Your Property on the Map</h3>
+                <p className="text-gray-500 text-xs">
+                  This helps renters and buyers find your property on Domorang's map.
+                  {form.area && <span className="text-teal-500 font-medium"> Map is centred on {form.area}.</span>}
+                </p>
+              </div>
+
+              {!form.area && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700">
+                  ⚠️ Go back and select an area first — the map will centre there automatically.
+                </div>
+              )}
+
+              {leafletLoaded && (
+                <MapPinPicker
+                  area={form.area || 'Maitama'}
+                  lat={form.latitude}
+                  lng={form.longitude}
+                  onChange={(lat, lng) => setForm(f => ({ ...f, latitude: lat, longitude: lng }))}
+                />
+              )}
+
+              {!leafletLoaded && (
+                <div className="h-64 rounded-xl bg-gray-100 flex items-center justify-center text-sm text-gray-400">
+                  Loading map...
+                </div>
+              )}
+
+              <p className="text-xs text-gray-400">
+                This step is optional but strongly recommended. You can skip it and add a pin later.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3 — DETAILS */}
+        {step === 3 && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
               <div>
@@ -309,11 +487,9 @@ export default function PostListingPage() {
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Description *</label>
                 <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe the property — mention key features, estate facilities, access roads..." className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-teal-500 h-32 resize-none" />
-                <p className="text-xs text-gray-400 mt-1">More detail = more inquiries.</p>
               </div>
             </div>
 
-            {/* Amenities */}
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-black text-gray-900 mb-1">Amenities & Features</h3>
               <p className="text-gray-500 text-xs mb-4">Select all that apply.</p>
@@ -330,13 +506,12 @@ export default function PostListingPage() {
           </div>
         )}
 
-        {/* STEP 3 — PHOTOS */}
-        {step === 3 && (
+        {/* STEP 4 — PHOTOS */}
+        {step === 4 && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-black text-gray-900 mb-1">Property Photos</h3>
               <p className="text-gray-500 text-xs mb-4">Upload at least 3 photos. Listings with more photos get 3x more inquiries.</p>
-
               {imagePreviews.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {imagePreviews.map((src, i) => (
@@ -347,7 +522,6 @@ export default function PostListingPage() {
                   ))}
                 </div>
               )}
-
               <label className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition">
                 <input type="file" multiple accept="image/*" onChange={e => handleImages(e.target.files)} className="hidden" />
                 <div className="text-3xl mb-2">📸</div>
@@ -355,12 +529,7 @@ export default function PostListingPage() {
                 <div className="text-xs text-gray-400">JPG, PNG — max 20MB each</div>
                 <span className="inline-block mt-3 px-4 py-1.5 bg-teal-500 text-white rounded-full text-xs font-bold">Choose Photos</span>
               </label>
-
-              {imagePreviews.length > 0 && (
-                <p className="text-xs text-gray-500 mt-2">{imagePreviews.length} photo{imagePreviews.length !== 1 ? 's' : ''} selected</p>
-              )}
             </div>
-
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-black text-gray-900 mb-1">Video Tour (Optional)</h3>
               <p className="text-gray-500 text-xs mb-3">Add a YouTube or Google Drive link.</p>
@@ -369,8 +538,8 @@ export default function PostListingPage() {
           </div>
         )}
 
-        {/* STEP 4 — REVIEW */}
-        {step === 4 && (
+        {/* STEP 5 — REVIEW */}
+        {step === 5 && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-5 shadow-sm">
               <h3 className="font-black text-gray-900 mb-4">Review Your Listing</h3>
@@ -384,6 +553,7 @@ export default function PostListingPage() {
                   { label: 'Bathrooms', val: form.bathrooms || '—' },
                   { label: 'Size', val: form.size_sqft ? `${form.size_sqft} sqft` : '—' },
                   { label: 'Inspection Fee', val: form.inspection_fee ? `₦${parseInt(form.inspection_fee).toLocaleString()}` : '—' },
+                  { label: 'Location Pin', val: form.latitude ? '📍 Set' : '—' },
                 ].map((r, i) => (
                   <div key={i}>
                     <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">{r.label}</div>
@@ -402,7 +572,6 @@ export default function PostListingPage() {
                 </div>
               )}
             </div>
-
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
               <p className="text-sm text-yellow-800">
                 <strong>⚠️ Verification Notice:</strong> After submitting, our team will verify your listing within <strong>24 hours</strong>. Fraudulent listings will result in account suspension.
@@ -411,7 +580,7 @@ export default function PostListingPage() {
           </div>
         )}
 
-        {/* NAVIGATION BUTTONS */}
+        {/* NAVIGATION */}
         <div className="flex justify-between items-center mt-6">
           {step > 1 ? (
             <button onClick={() => setStep(step - 1)} className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-700 hover:border-gray-300 transition">
@@ -419,9 +588,9 @@ export default function PostListingPage() {
             </button>
           ) : <div />}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <button onClick={() => setStep(step + 1)} className="px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
-              Continue →
+              {step === 2 && !form.latitude ? 'Skip for now →' : 'Continue →'}
             </button>
           ) : (
             <button onClick={handleSubmit} disabled={loading} className="px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition disabled:opacity-60">

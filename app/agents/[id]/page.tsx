@@ -12,6 +12,9 @@ const defaultAgent = {
   verification_status: 'verified',
   rating: 4.8,
   total_reviews: 34,
+  bio: '',
+  instagram_url: '',
+  website_url: '',
   profiles: { full_name: 'Aminu Okeke', phone: '+2348012345678' }
 }
 
@@ -120,6 +123,35 @@ export default function AgentProfilePage() {
                   </span>
                 )}
               </div>
+
+              {agent.bio && (
+                <p className="text-sm text-gray-600 leading-relaxed text-center mb-5">
+                  {agent.bio}
+                </p>
+              )}
+
+              {(agent.instagram_url || agent.website_url) && (
+                <div className="flex justify-center gap-2 mb-5">
+                  {agent.instagram_url && (
+                    <a href={agent.instagram_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-bold text-[#31768a] border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#0ECFC0] transition"
+                    >
+                      📷 Instagram
+                    </a>
+                  )}
+                  {agent.website_url && (
+                    <a href={agent.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-bold text-[#31768a] border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#0ECFC0] transition"
+                    >
+                      🔗 Website
+                    </a>
+                  )}
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-2 text-center bg-[#d9edf0] rounded-xl p-3 mb-5">
                 <div>

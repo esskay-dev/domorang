@@ -1,9 +1,38 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '../../lib/supabase'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [session, setSession] = useState(null)
+  const [role, setRole] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      if (data.session) fetchRole(data.session.user.id)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession)
+      if (newSession) fetchRole(newSession.user.id)
+      else setRole(null)
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [])
+
+  async function fetchRole(userId) {
+    const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
+    setRole(data?.role || null)
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    setMenuOpen(false)
+    window.location.href = '/'
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-teal-100 shadow-sm">
@@ -25,12 +54,30 @@ export default function Navbar() {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/signin" className="px-5 py-2 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm hover:bg-teal-600 hover:text-white transition">
-              Sign In
-            </Link>
-            <Link href="/signup" className="px-5 py-2 rounded-full bg-teal-500 text-white font-semibold text-sm hover:bg-teal-600 transition">
-              Sign Up
-            </Link>
+            {session ? (
+              <>
+                {role === 'agent' && (
+                  <Link href="/agent/profile" className="px-5 py-2 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm hover:bg-teal-600 hover:text-white transition">
+                    Edit Profile
+                  </Link>
+                )}
+                <button
+                  onClick={handleSignOut}
+                  className="px-5 py-2 rounded-full bg-teal-500 text-white font-semibold text-sm hover:bg-teal-600 transition"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/signin" className="px-5 py-2 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm hover:bg-teal-600 hover:text-white transition">
+                  Sign In
+                </Link>
+                <Link href="/signup" className="px-5 py-2 rounded-full bg-teal-500 text-white font-semibold text-sm hover:bg-teal-600 transition">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Hamburger */}
@@ -53,10 +100,19 @@ export default function Navbar() {
           <Link href="/listings?type=sale" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Buy</Link>
           <Link href="/post-listing" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Sell</Link>
           <Link href="/agents" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Find an Agent</Link>
-          <div className="flex gap-3 pt-2 border-t border-teal-100">
-            <Link href="/signin" className="flex-1 text-center py-2.5 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm" onClick={() => setMenuOpen(false)}>Sign In</Link>
-            <Link href="/signup" className="flex-1 text-center py-2.5 rounded-full bg-teal-500 text-white font-semibold text-sm" onClick={() => setMenuOpen(false)}>Sign Up</Link>
-          </div>
+          {session ? (
+            <div className="flex flex-col gap-3 pt-2 border-t border-teal-100">
+              {role === 'agent' && (
+                <Link href="/agent/profile" className="text-center py-2.5 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm" onClick={() => setMenuOpen(false)}>Edit Profile</Link>
+              )}
+              <button onClick={handleSignOut} className="text-center py-2.5 rounded-full bg-teal-500 text-white font-semibold text-sm">Sign Out</button>
+            </div>
+          ) : (
+            <div className="flex gap-3 pt-2 border-t border-teal-100">
+              <Link href="/signin" className="flex-1 text-center py-2.5 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm" onClick={() => setMenuOpen(false)}>Sign In</Link>
+              <Link href="/signup" className="flex-1 text-center py-2.5 rounded-full bg-teal-500 text-white font-semibold text-sm" onClick={() => setMenuOpen(false)}>Sign Up</Link>
+            </div>
+          )}
         </div>
       )}
     </nav>

@@ -13,16 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Domorang — Verified Property Listings in Abuja",
-  description: "Early access. Verified listings. No fake agents. Just real homes in Abuja done right.",
+  title: "Domorang — Real Estate You Can Trust in Abuja",
+  description: "Discover verified properties, connect with trusted agents and landlords, and make confident property decisions—all in one place.",
   openGraph: {
-    title: "Domorang — Be First When We Launch",
-    description: "Verified listings. No fake agents. Just real homes in Abuja done right.",
-    url: "https://waitlist.domorang.com",
+    title: "Domorang — Real Estate You Can Trust in Abuja",
+    description: "Verified listings only. Zero scams. Discover verified properties and connect with trusted agents and landlords in Abuja.",
+    url: "https://www.domorang.com",
     siteName: "Domorang",
     images: [
       {
-        url: "https://waitlist.domorang.com/og-image.png",
+        url: "https://www.domorang.com/og-image.png",
         width: 1200,
         height: 630,
       },

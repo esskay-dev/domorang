@@ -13,8 +13,33 @@ const defaultAgents = [
   { id: '6', agency_name: 'Prime Abuja Homes', area_of_operation: 'Asokoro', verification_status: 'verified', rating: 4.6, total_reviews: 42, profiles: { full_name: 'Ngozi Eze', phone: '+2348067890123' } },
 ]
 
+function AgentCardSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm animate-pulse">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="w-14 h-14 rounded-full bg-gray-200 flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-2/3" />
+          <div className="h-3 bg-gray-100 rounded w-1/2" />
+          <div className="h-4 bg-gray-100 rounded-full w-16 mt-1" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 bg-gray-50 rounded-xl p-3 mb-4">
+        <div className="h-8 bg-gray-100 rounded" />
+        <div className="h-8 bg-gray-100 rounded" />
+        <div className="h-8 bg-gray-100 rounded" />
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1 h-9 bg-gray-100 rounded-full" />
+        <div className="flex-1 h-9 bg-gray-100 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<any[]>(defaultAgents)
+  const [agents, setAgents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [selectedArea, setSelectedArea] = useState('All')
 
@@ -25,12 +50,14 @@ export default function AgentsPage() {
   }, [])
 
   async function loadAgents() {
+    setLoading(true)
     const { data } = await supabase
       .from('agents')
       .select('*, profiles(full_name, phone)')
       .eq('verification_status', 'verified')
       .order('rating', { ascending: false })
-    if (data && data.length > 0) setAgents(data)
+    setAgents(data && data.length > 0 ? data : defaultAgents)
+    setLoading(false)
   }
 
   const filtered = agents.filter(agent => {
@@ -87,10 +114,18 @@ export default function AgentsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <p className="text-sm text-gray-500 mb-6">
-          <strong className="text-gray-900">{filtered.length} verified agents</strong> in Abuja
+          {loading ? (
+            <span className="inline-block h-4 w-40 bg-gray-200 rounded animate-pulse" />
+          ) : (
+            <><strong className="text-gray-900">{filtered.length} verified agents</strong> in Abuja</>
+          )}
         </p>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => <AgentCardSkeleton key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-20">
             <div className="font-bold text-gray-700">No agents found</div>
             <div className="text-sm text-gray-500 mt-1">Try a different search or area filter</div>

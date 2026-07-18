@@ -3,6 +3,9 @@ import ListingCard from '../components/ListingCard'
 import ListingsFilters from '../components/ListingsFilters'
 import { createSupabaseServer } from '../../lib/supabase-server'
 import Link from 'next/link'
+import { Home } from 'lucide-react'
+
+const ITEMS_PER_PAGE = 9
 
 export default async function ListingsPage({ searchParams }: { searchParams: Promise<any> }) {
   const supabase = await createSupabaseServer()
@@ -18,6 +21,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
   const minPrice = resolvedParams?.minPrice ? parseInt(resolvedParams.minPrice) : undefined
   const maxPrice = resolvedParams?.maxPrice ? parseInt(resolvedParams.maxPrice) : undefined
   const bedroomsParam: string | undefined = resolvedParams?.bedrooms
+  const currentPage = Math.max(1, parseInt(resolvedParams?.page) || 1)
 
   let query = supabase
     .from('listings')
@@ -65,6 +69,26 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
 
   const filteredPlaceholders = applyClientFilters(allPlaceholders)
   const displayListings = listings && listings.length > 0 ? listings : filteredPlaceholders
+
+  const totalPages = Math.max(1, Math.ceil(displayListings.length / ITEMS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedListings = displayListings.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE
+  )
+
+  function buildPageHref(page: number) {
+    const params = new URLSearchParams()
+    if (type !== 'all') params.set('type', type)
+    if (selectedAreas.length) params.set('area', selectedAreas.join(','))
+    if (selectedTypes.length) params.set('ptype', selectedTypes.join(','))
+    if (minPrice !== undefined) params.set('minPrice', String(minPrice))
+    if (maxPrice !== undefined) params.set('maxPrice', String(maxPrice))
+    if (bedroomsParam) params.set('bedrooms', bedroomsParam)
+    if (page > 1) params.set('page', String(page))
+    const qs = params.toString()
+    return qs ? `/listings?${qs}` : '/listings'
+  }
 
   const areas = ['Wuse 2', 'Maitama', 'Garki', 'Gwarinpa', 'Lokogoma', 'Asokoro', 'Kubwa', 'Jabi', 'Lugbe', 'Kado', 'Life Camp']
   const propertyTypes = ['Flat / Apartment', 'Duplex', 'Bungalow', 'Self Contain', 'Land']
@@ -146,7 +170,7 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
 
             {displayListings.length === 0 ? (
               <div className="bg-white rounded-2xl p-16 text-center">
-                <div className="text-5xl mb-4">🏠</div>
+                <Home size={48} className="text-teal-300 mx-auto mb-4" />
                 <h3 className="font-black text-gray-900 mb-2">No listings found</h3>
                 <p className="text-gray-500 text-sm mb-6">Try adjusting your filters or check back soon.</p>
                 <Link href="/listings" className="px-6 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
@@ -155,18 +179,22 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {displayListings.map((listing: any) => (
+                {paginatedListings.map((listing: any) => (
                   <ListingCard key={listing.id} listing={listing} />
                 ))}
               </div>
             )}
 
-            {displayListings.length > 0 && (
+            {totalPages > 1 && (
               <div className="flex justify-center gap-2 mt-10">
-                {[1, 2, 3, 4, 5].map(p => (
-                  <button key={p} className={`w-9 h-9 rounded-full border-2 text-sm font-bold transition ${p === 1 ? 'bg-teal-500 border-teal-500 text-white' : 'border-gray-200 text-gray-600 hover:border-teal-500'}`}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <Link
+                    key={p}
+                    href={buildPageHref(p)}
+                    className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-bold transition ${p === safePage ? 'bg-teal-500 border-teal-500 text-white' : 'border-gray-200 text-gray-600 hover:border-teal-500'}`}
+                  >
                     {p}
-                  </button>
+                  </Link>
                 ))}
               </div>
             )}

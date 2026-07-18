@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 import Navbar from '../components/Navbar'
+import { Home, Key, Check, MapPin, AlertTriangle, Camera, X, PartyPopper, ArrowLeft, ArrowRight } from 'lucide-react'
 
 const AREAS = ['Wuse 2','Maitama','Garki','Gwarinpa','Lokogoma','Asokoro','Kubwa','Jabi','Lugbe','Kado','Life Camp','Apo','Gaduwa']
 const AMENITIES = ['24/7 Security','Constant Power','Fitted Kitchen','Borehole Water','Boys Quarters','Swimming Pool','Gym','Prepaid Meter','Pop Ceiling','Tiled Floors','Air Conditioning','Perimeter Fence','Gate House','CCTV','Wi-Fi Ready']
@@ -116,8 +117,8 @@ const map = L.map(containerRef.current!).setView(center, 15)
         style={{ height: '280px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e5e7eb' }}
       />
       {lat && lng ? (
-        <p className="text-xs text-teal-600 font-medium">
-          📍 Pin set: {lat.toFixed(5)}, {lng.toFixed(5)}
+        <p className="text-xs text-teal-600 font-medium flex items-center gap-1">
+          <MapPin size={14} /> Pin set: {lat.toFixed(5)}, {lng.toFixed(5)}
         </p>
       ) : (
         <p className="text-xs text-gray-400">Tap anywhere on the map to drop a pin on the exact location.</p>
@@ -274,7 +275,7 @@ if (imageUrls.length === 0 && images.length > 0) {
       <Navbar />
       <div className="max-w-lg mx-auto px-4 py-20 text-center">
         <div className="bg-white rounded-2xl p-10 shadow-sm">
-          <div className="text-5xl mb-4">🎉</div>
+          <PartyPopper size={48} className="text-teal-500 mx-auto mb-4" />
           <h2 className="text-2xl font-black text-gray-900 mb-2">Listing Submitted!</h2>
           <p className="text-gray-500 text-sm mb-6">Your property has been submitted for verification. We'll review it within 24 hours and notify you once it's live.</p>
           <div className="flex gap-3">
@@ -313,7 +314,7 @@ if (imageUrls.length === 0 && images.length > 0) {
                   i + 1 === step ? 'bg-teal-500 text-white' :
                   'border-2 border-gray-200 text-gray-400'
                 }`}>
-                  {i + 1 < step ? '✓' : i + 1}
+                  {i + 1 < step ? <Check size={14} /> : i + 1}
                 </div>
                 <span className={`text-xs font-semibold hidden sm:block ${i + 1 === step ? 'text-teal-500' : 'text-gray-400'}`}>{s}</span>
               </div>
@@ -335,10 +336,13 @@ if (imageUrls.length === 0 && images.length > 0) {
               <h3 className="font-black text-gray-900 mb-1">Listing Type</h3>
               <p className="text-gray-500 text-xs mb-4">Is this property for rent or for sale?</p>
               <div className="grid grid-cols-2 gap-3">
-                {[{ val: 'rent', label: '🏠 For Rent' }, { val: 'sale', label: '🔑 For Sale' }].map(t => (
+                {[
+                  { val: 'rent', label: 'For Rent', icon: Home },
+                  { val: 'sale', label: 'For Sale', icon: Key },
+                ].map(t => (
                   <button key={t.val} onClick={() => setForm({ ...form, listing_type: t.val })}
-                    className={`py-3 rounded-xl border-2 font-bold text-sm transition ${form.listing_type === t.val ? 'border-teal-500 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-600'}`}>
-                    {t.label}
+                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition ${form.listing_type === t.val ? 'border-teal-500 bg-teal-50 text-teal-600' : 'border-gray-200 text-gray-600'}`}>
+                    <t.icon size={16} /> {t.label}
                   </button>
                 ))}
               </div>
@@ -421,8 +425,8 @@ if (imageUrls.length === 0 && images.length > 0) {
               </div>
 
               {!form.area && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700">
-                  ⚠️ Go back and select an area first — the map will centre there automatically.
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700 flex items-center gap-1.5">
+                  <AlertTriangle size={14} /> Go back and select an area first — the map will centre there automatically.
                 </div>
               )}
 
@@ -497,7 +501,7 @@ if (imageUrls.length === 0 && images.length > 0) {
                 {AMENITIES.map(a => (
                   <button key={a} onClick={() => toggleAmenity(a)}
                     className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition ${selectedAmenities.includes(a) ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-700'}`}>
-                    <span className={`font-bold ${selectedAmenities.includes(a) ? 'text-teal-500' : 'text-gray-300'}`}>✓</span>
+                    <Check size={14} className={selectedAmenities.includes(a) ? 'text-teal-500' : 'text-gray-300'} />
                     {a}
                   </button>
                 ))}
@@ -517,14 +521,16 @@ if (imageUrls.length === 0 && images.length > 0) {
                   {imagePreviews.map((src, i) => (
                     <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-gray-200">
                       <img src={src} alt={`photo ${i+1}`} className="w-full h-full object-cover" />
-                      <button onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center">✕</button>
+                      <button onClick={() => removeImage(i)} className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center">
+                        <X size={12} />
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
               <label className="block border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition">
                 <input type="file" multiple accept="image/*" onChange={e => handleImages(e.target.files)} className="hidden" />
-                <div className="text-3xl mb-2">📸</div>
+                <Camera size={32} className="text-teal-400 mx-auto mb-2" />
                 <div className="text-sm font-bold text-gray-700 mb-1">Tap to upload photos</div>
                 <div className="text-xs text-gray-400">JPG, PNG — max 20MB each</div>
                 <span className="inline-block mt-3 px-4 py-1.5 bg-teal-500 text-white rounded-full text-xs font-bold">Choose Photos</span>
@@ -553,13 +559,18 @@ if (imageUrls.length === 0 && images.length > 0) {
                   { label: 'Bathrooms', val: form.bathrooms || '—' },
                   { label: 'Size', val: form.size_sqft ? `${form.size_sqft} sqft` : '—' },
                   { label: 'Inspection Fee', val: form.inspection_fee ? `₦${parseInt(form.inspection_fee).toLocaleString()}` : '—' },
-                  { label: 'Location Pin', val: form.latitude ? '📍 Set' : '—' },
                 ].map((r, i) => (
                   <div key={i}>
                     <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">{r.label}</div>
                     <div className="font-bold text-gray-900 mt-0.5">{r.val}</div>
                   </div>
                 ))}
+                <div>
+                  <div className="text-xs text-gray-400 uppercase font-bold tracking-wider">Location Pin</div>
+                  <div className="font-bold text-gray-900 mt-0.5 flex items-center gap-1">
+                    {form.latitude ? (<><MapPin size={14} className="text-teal-500" /> Set</>) : '—'}
+                  </div>
+                </div>
               </div>
               {imagePreviews.length > 0 && (
                 <div className="mt-4">
@@ -573,8 +584,9 @@ if (imageUrls.length === 0 && images.length > 0) {
               )}
             </div>
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
-              <p className="text-sm text-yellow-800">
-                <strong>⚠️ Verification Notice:</strong> After submitting, our team will verify your listing within <strong>24 hours</strong>. Fraudulent listings will result in account suspension.
+              <p className="text-sm text-yellow-800 flex items-start gap-2">
+                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                <span><strong>Verification Notice:</strong> After submitting, our team will verify your listing within <strong>24 hours</strong>. Fraudulent listings will result in account suspension.</span>
               </p>
             </div>
           </div>
@@ -583,18 +595,18 @@ if (imageUrls.length === 0 && images.length > 0) {
         {/* NAVIGATION */}
         <div className="flex justify-between items-center mt-6">
           {step > 1 ? (
-            <button onClick={() => setStep(step - 1)} className="px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-700 hover:border-gray-300 transition">
-              ← Back
+            <button onClick={() => setStep(step - 1)} className="flex items-center gap-1.5 px-6 py-3 border-2 border-gray-200 rounded-full font-bold text-sm text-gray-700 hover:border-gray-300 transition">
+              <ArrowLeft size={16} /> Back
             </button>
           ) : <div />}
 
           {step < 5 ? (
-            <button onClick={() => setStep(step + 1)} className="px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
-              {step === 2 && !form.latitude ? 'Skip for now →' : 'Continue →'}
+            <button onClick={() => setStep(step + 1)} className="flex items-center gap-1.5 px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition">
+              {step === 2 && !form.latitude ? 'Skip for now' : 'Continue'} <ArrowRight size={16} />
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={loading} className="px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition disabled:opacity-60">
-              {loading ? 'Submitting...' : 'Submit for Verification ✓'}
+            <button onClick={handleSubmit} disabled={loading} className="flex items-center gap-1.5 px-8 py-3 bg-teal-500 text-white rounded-full font-bold text-sm hover:bg-teal-600 transition disabled:opacity-60">
+              {loading ? 'Submitting...' : (<>Submit for Verification <Check size={16} /></>)}
             </button>
           )}
         </div>

@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { Home, CheckCircle2, Heart, MapPin, BedDouble, Bath, Ruler, Flag } from 'lucide-react'
 
 export default function ListingCard({ listing, comingSoon = false }) {
   const {
@@ -69,7 +70,9 @@ export default function ListingCard({ listing, comingSoon = false }) {
                 className={`w-full h-full object-cover transition-transform duration-300 ${comingSoon ? '' : 'group-hover:scale-105'}`}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-4xl bg-teal-50">🏠</div>
+              <div className="w-full h-full flex items-center justify-center bg-teal-50">
+                <Home size={40} className="text-teal-300" />
+              </div>
             )}
 
             {comingSoon ? (
@@ -84,7 +87,7 @@ export default function ListingCard({ listing, comingSoon = false }) {
 
             {!comingSoon && status === 'verified' && (
               <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold text-white bg-green-500 flex items-center gap-1">
-                ✓ Verified
+                <CheckCircle2 size={13} /> Verified
               </span>
             )}
 
@@ -94,7 +97,7 @@ export default function ListingCard({ listing, comingSoon = false }) {
                 disabled={saving}
                 className={`absolute bottom-3 right-3 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all ${saved ? 'bg-red-500 text-white' : 'bg-white text-gray-400 hover:text-red-400'}`}
               >
-                {saved ? '♥' : '♡'}
+                <Heart size={16} className={saved ? 'fill-current' : ''} />
               </button>
             )}
           </div>
@@ -104,7 +107,7 @@ export default function ListingCard({ listing, comingSoon = false }) {
               <div className="py-2">
                 <div className="text-sm font-bold text-gray-700 mb-1">More homes coming soon</div>
                 <div className="text-xs text-gray-400 flex items-center gap-1">
-                  📍 {area}, Abuja
+                  <MapPin size={12} /> {area}, Abuja
                 </div>
               </div>
             ) : (
@@ -115,20 +118,20 @@ export default function ListingCard({ listing, comingSoon = false }) {
                 </div>
                 <div className="text-sm font-semibold text-gray-800 mt-1 mb-1 line-clamp-1">{title}</div>
                 <div className="text-xs text-gray-500 mb-3 flex items-center gap-1">
-                  📍 {area}, Abuja
+                  <MapPin size={12} /> {area}, Abuja
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-3">
                   <div className="flex gap-3 text-xs text-gray-500">
-                    <span>🛏 {bedrooms} Bed</span>
-                    <span>🚿 {bathrooms} Bath</span>
-                    {size_sqft && <span>📐 {size_sqft} sqft</span>}
+                    <span className="flex items-center gap-1"><BedDouble size={14} /> {bedrooms} Bed</span>
+                    <span className="flex items-center gap-1"><Bath size={14} /> {bathrooms} Bath</span>
+                    {size_sqft && <span className="flex items-center gap-1"><Ruler size={14} /> {size_sqft} sqft</span>}
                   </div>
                   <button
                     onClick={e => { e.preventDefault(); e.stopPropagation(); setReporting(true) }}
-                    className="text-xs text-gray-300 hover:text-red-400 transition"
+                    className="text-gray-300 hover:text-red-400 transition"
                     title="Report listing"
                   >
-                    🚩
+                    <Flag size={14} />
                   </button>
                 </div>
               </>
@@ -184,7 +187,7 @@ export default function ListingCard({ listing, comingSoon = false }) {
 
       {!comingSoon && reported && (
         <div className="absolute inset-0 z-10 bg-white rounded-2xl p-5 shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center">
-          <div className="text-3xl mb-2">✅</div>
+          <CheckCircle2 size={32} className="text-green-500 mb-2" />
           <div className="font-black text-gray-900 text-sm mb-1">Report Submitted</div>
           <p className="text-xs text-gray-500 mb-4">Thank you. Our team will review this listing.</p>
           <button

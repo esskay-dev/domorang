@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Navbar from '../../components/Navbar'
 import ListingCard from '../../components/ListingCard'
 import { supabase } from '../../../lib/supabase'
+import { MapPin, Star, CheckCircle2, Link2, Check } from 'lucide-react'
+import { FaInstagram } from 'react-icons/fa'
 
 const defaultAgent = {
   agency_name: 'Okeke Properties',
@@ -119,7 +121,7 @@ export default function AgentProfilePage() {
                 <div className="text-sm text-gray-500">{agent.agency_name}</div>
                 {agent.verification_status === 'verified' && (
                   <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full mt-2">
-                    ✓ Verified Agent
+                    <CheckCircle2 size={14} /> Verified Agent
                   </span>
                 )}
               </div>
@@ -138,7 +140,7 @@ export default function AgentProfilePage() {
                       rel="noreferrer"
                       className="flex items-center gap-1.5 text-xs font-bold text-[#31768a] border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#0ECFC0] transition"
                     >
-                      📷 Instagram
+                      <FaInstagram size={14} /> Instagram
                     </a>
                   )}
                   {agent.website_url && (
@@ -147,7 +149,7 @@ export default function AgentProfilePage() {
                       rel="noreferrer"
                       className="flex items-center gap-1.5 text-xs font-bold text-[#31768a] border border-gray-200 rounded-full px-3 py-1.5 hover:border-[#0ECFC0] transition"
                     >
-                      🔗 Website
+                      <Link2 size={14} /> Website
                     </a>
                   )}
                 </div>
@@ -155,7 +157,9 @@ export default function AgentProfilePage() {
 
               <div className="grid grid-cols-3 gap-2 text-center bg-[#d9edf0] rounded-xl p-3 mb-5">
                 <div>
-                  <div className="font-black text-gray-900">{agent.rating || 0}★</div>
+                  <div className="font-black text-gray-900 flex items-center justify-center gap-1">
+                    {agent.rating || 0} <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                  </div>
                   <div className="text-xs text-gray-500">Rating</div>
                 </div>
                 <div>
@@ -170,7 +174,7 @@ export default function AgentProfilePage() {
 
               <div className="text-sm text-gray-600 mb-5">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">📍</span>
+                  <MapPin size={16} className="text-gray-400" />
                   <span>{agent.area_of_operation}, Abuja</span>
                 </div>
               </div>
@@ -198,8 +202,11 @@ export default function AgentProfilePage() {
                   <label className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2 block">Your Rating</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map(star => (
-                      <button key={star} onClick={() => setReviewForm({ ...reviewForm, rating: star })} className={`text-2xl transition ${star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-200'}`}>
-                        ★
+                      <button key={star} onClick={() => setReviewForm({ ...reviewForm, rating: star })} className="transition">
+                        <Star
+                          size={26}
+                          className={star <= reviewForm.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}
+                        />
                       </button>
                     ))}
                   </div>
@@ -262,12 +269,28 @@ export default function AgentProfilePage() {
                           <div className="font-bold text-gray-900 text-sm">{review.profiles?.full_name || 'Anonymous'}</div>
                           <div className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString('en-NG', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                         </div>
-                        <div className="text-yellow-400 font-bold">{'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</div>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map(i => (
+                            <Star
+                              key={i}
+                              size={14}
+                              className={i <= review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-200 fill-gray-200'}
+                            />
+                          ))}
+                        </div>
                       </div>
                       <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
                       <div className="flex gap-3 mt-2">
-                        {review.agent_showed_up && <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">✓ Agent showed up</span>}
-                        {review.property_as_described && <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">✓ As described</span>}
+                        {review.agent_showed_up && (
+                          <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                            <Check size={12} /> Agent showed up
+                          </span>
+                        )}
+                        {review.property_as_described && (
+                          <span className="flex items-center gap-1 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                            <Check size={12} /> As described
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

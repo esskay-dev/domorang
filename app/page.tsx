@@ -386,7 +386,7 @@ export default async function HomePage() {
           <div>
             <h4 className="font-bold mb-4 text-sm uppercase tracking-wider">Contact</h4>
             <div className="text-sm text-gray-400 space-y-1">
-              <p>Plot 22, Sunrise Estate, Life Camp, Abuja.</p>
+              <p>No. 72, Obasanjo Road, Freedom Avenue, Dutse-Bwari, Bwari Area Council, FCT, Abuja, Nigeria.</p>
               <a href="mailto:hello@domorang.com" className="text-teal-400 hover:text-teal-300">hello@domorang.com</a>
             </div>
           </div>

@@ -21,10 +21,22 @@ export default function HeroMap({ listings }: HeroMapProps) {
   const mapInstanceRef = useRef<any>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     if (!mapRef.current || mapInstanceRef.current) return
 
     // Dynamically import Leaflet (browser only)
     import('leaflet').then((L) => {
+      // Bail out if the effect was cleaned up (e.g. Strict Mode double-invoke,
+      // fast refresh, or unmount) before this async import resolved.
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return
+
+      // Defensive: clear any stale Leaflet id left on the container from a
+      // previous init that got interrupted before it could clean up properly.
+      if ((mapRef.current as any)._leaflet_id) {
+        delete (mapRef.current as any)._leaflet_id
+      }
+
       // Fix Leaflet default icon paths broken by webpack
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -135,6 +147,7 @@ export default function HeroMap({ listings }: HeroMapProps) {
     })
 
     return () => {
+      cancelled = true
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null

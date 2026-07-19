@@ -391,8 +391,13 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-gray-800 text-center text-xs text-gray-600">
-          © 2026 Domorang. All rights reserved.
+        <div className="max-w-6xl mx-auto mt-10 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-600">
+          <p>© 2026 Domorang. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/privacy-policy" className="hover:text-teal-400 transition">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </footer>
     </main>

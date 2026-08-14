@@ -1,6 +1,6 @@
 import Navbar from './components/Navbar'
 import Link from 'next/link'
-import { createSupabaseServer } from '../lib/supabase-server'
+import { api } from '../lib/api'
 import FeaturedShowcase from './components/FeaturedShowcase'
 import HeroMap from './components/HeroMap'
 import React from 'react'
@@ -109,13 +109,12 @@ function ServiceIllustration({ type }: { type: string }) {
 }
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServer()
-  const { data: realListings } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('status', 'verified')
-    .order('created_at', { ascending: false })
-    .limit(6)
+  let realListings: any[] = []
+  try {
+    realListings = await api.listings.getFeatured(6)
+  } catch (err) {
+    console.error('Failed to fetch featured listings from NestJS server:', err)
+  }
 
   const realCount = realListings?.length || 0
   const placeholdersNeeded = Math.max(0, TARGET_COUNT - realCount)

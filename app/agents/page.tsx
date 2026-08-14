@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Navbar from '../components/Navbar'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 
 const defaultAgents = [
   { id: '1', agency_name: 'Okeke Properties', area_of_operation: 'Maitama', verification_status: 'verified', rating: 4.8, total_reviews: 34, profiles: { full_name: 'Aminu Okeke', phone: '+2348012345678' } },
@@ -47,16 +47,17 @@ export default function AgentsPage() {
 
   useEffect(() => {
     loadAgents()
-  }, [])
+  }, [search, selectedArea])
 
   async function loadAgents() {
     setLoading(true)
-    const { data } = await supabase
-      .from('agents')
-      .select('*, profiles(full_name, phone)')
-      .eq('verification_status', 'verified')
-      .order('rating', { ascending: false })
-    setAgents(data && data.length > 0 ? data : defaultAgents)
+    try {
+      const data = await api.agents.getAll(search, selectedArea)
+      setAgents(data && data.length > 0 ? data : defaultAgents)
+    } catch (err) {
+      console.error('Failed to fetch agents:', err)
+      setAgents(defaultAgents)
+    }
     setLoading(false)
   }
 

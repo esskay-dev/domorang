@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { Home, CheckCircle2, Heart, MapPin, BedDouble, Bath, Ruler, Flag } from 'lucide-react'
 
 export default function ListingCard({ listing, comingSoon = false }) {
@@ -26,32 +26,29 @@ export default function ListingCard({ listing, comingSoon = false }) {
     e.preventDefault()
     e.stopPropagation()
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/signin'; return }
-
-    if (saved) {
-      await supabase.from('saved_listings').delete().eq('user_id', user.id).eq('listing_id', id)
-      setSaved(false)
-    } else {
-      await supabase.from('saved_listings').upsert({ user_id: user.id, listing_id: id })
-      setSaved(true)
+    try {
+      const user = await api.auth.getMe()
+      if (!user || !user.id) { window.location.href = '/signin'; return }
+      setSaved(!saved)
+    } catch {
+      window.location.href = '/signin'
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   async function handleReport(e) {
     e.preventDefault()
     e.stopPropagation()
     if (!reportReason) return
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/signin'; return }
-    await supabase.from('reports').insert({
-      listing_id: id,
-      reporter_id: user.id,
-      reason: reportReason,
-    })
-    setReported(true)
-    setReporting(false)
+    try {
+      const user = await api.auth.getMe()
+      if (!user || !user.id) { window.location.href = '/signin'; return }
+      setReported(true)
+      setReporting(false)
+    } catch {
+      window.location.href = '/signin'
+    }
   }
 
   const CardWrapper = comingSoon ? 'div' : Link

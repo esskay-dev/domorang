@@ -1,37 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const [session, setSession] = useState(null)
-  const [role, setRole] = useState(null)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      if (data.session) fetchRole(data.session.user.id)
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession)
-      if (newSession) fetchRole(newSession.user.id)
-      else setRole(null)
-    })
-
-    return () => listener.subscription.unsubscribe()
-  }, [])
-
-  async function fetchRole(userId) {
-    const { data } = await supabase.from('profiles').select('role').eq('id', userId).single()
-    setRole(data?.role || null)
-  }
+  const { user, role, loading, signOut } = useAuth()
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
     setMenuOpen(false)
-    window.location.href = '/'
+    await signOut()
   }
 
   return (
@@ -54,11 +32,18 @@ export default function Navbar() {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center gap-3">
-            {session ? (
+            {loading ? (
+              <div className="w-24 h-9 bg-teal-50 animate-pulse rounded-full" />
+            ) : user ? (
               <>
                 {role === 'agent' && (
                   <Link href="/agent/profile" className="px-5 py-2 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm hover:bg-teal-600 hover:text-white transition">
                     Edit Profile
+                  </Link>
+                )}
+                {role === 'admin' && (
+                  <Link href="/admin" className="px-5 py-2 rounded-full border-2 border-purple-600 text-purple-600 font-semibold text-sm hover:bg-purple-600 hover:text-white transition">
+                    Admin
                   </Link>
                 )}
                 <button
@@ -100,10 +85,13 @@ export default function Navbar() {
           <Link href="/listings?type=sale" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Buy</Link>
           <Link href="/post-listing" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Sell</Link>
           <Link href="/agents" className="text-teal-600 font-medium py-2" onClick={() => setMenuOpen(false)}>Find an Agent</Link>
-          {session ? (
+          {user ? (
             <div className="flex flex-col gap-3 pt-2 border-t border-teal-100">
               {role === 'agent' && (
                 <Link href="/agent/profile" className="text-center py-2.5 rounded-full border-2 border-teal-600 text-teal-600 font-semibold text-sm" onClick={() => setMenuOpen(false)}>Edit Profile</Link>
+              )}
+              {role === 'admin' && (
+                <Link href="/admin" className="text-center py-2.5 rounded-full border-2 border-purple-600 text-purple-600 font-semibold text-sm" onClick={() => setMenuOpen(false)}>Admin Panel</Link>
               )}
               <button onClick={handleSignOut} className="text-center py-2.5 rounded-full bg-teal-500 text-white font-semibold text-sm">Sign Out</button>
             </div>

@@ -2,7 +2,7 @@
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 
 function SignInForm() {
   const searchParams = useSearchParams()
@@ -20,20 +20,19 @@ function SignInForm() {
     }
     setLoading(true)
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: form.email,
-      password: form.password,
-    })
-
-    if (signInError) {
-      setError('Incorrect email or password. Please try again.')
+    try {
+      const data = await api.auth.signIn({
+        email: form.email,
+        password: form.password,
+      })
+      if (data.access_token) {
+        const redirectTo = searchParams.get('redirectTo') || '/'
+        window.location.href = redirectTo
+      }
+    } catch (err: any) {
+      setError(err.message || 'Incorrect email or password. Please try again.')
+    } finally {
       setLoading(false)
-      return
-    }
-
-    if (data.session) {
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      window.location.href = redirectTo
     }
   }
 

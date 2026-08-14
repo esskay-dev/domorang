@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '../../components/Navbar'
 import ListingCard from '../../components/ListingCard'
-import { supabase } from '../../../lib/supabase'
+import { api } from '../../../lib/api'
 import { MapPin, Star, CheckCircle2, Link2, Check } from 'lucide-react'
 import { FaInstagram } from 'react-icons/fa'
 
@@ -42,48 +42,38 @@ export default function AgentProfilePage() {
   const [reviewDone, setReviewDone] = useState(false)
 
   useEffect(() => {
-    loadAgent()
-  }, [])
+    if (params?.id) loadAgent()
+  }, [params?.id])
 
   async function loadAgent() {
-    const { data: agentData } = await supabase
-      .from('agents')
-      .select('*, profiles(full_name, phone)')
-      .eq('id', params.id)
-      .single()
-    if (agentData) setAgent(agentData)
+    try {
+      const agentData = await api.agents.getOne(params.id as string)
+      if (agentData) setAgent(agentData)
+    } catch (err) {
+      console.error('Failed to load agent profile:', err)
+    }
 
-    const { data: listingsData } = await supabase
-      .from('listings')
-      .select('*')
-      .eq('agent_id', params.id)
-      .eq('status', 'verified')
-    if (listingsData && listingsData.length > 0) setListings(listingsData)
-
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select('*, profiles(full_name)')
-      .eq('agent_id', params.id)
-      .order('created_at', { ascending: false })
-    if (reviewsData && reviewsData.length > 0) setReviews(reviewsData)
+    try {
+      const listingsData = await api.agents.getListings(params.id as string)
+      if (listingsData) setListings(listingsData)
+    } catch (err) {
+      console.error('Failed to load agent listings:', err)
+    }
   }
 
   async function submitReview() {
     setSubmitting(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/signin'; return }
-    await supabase.from('reviews').insert({
-      agent_id: params.id,
-      reviewer_id: user.id,
-      rating: reviewForm.rating,
-      comment: reviewForm.comment,
-      agent_showed_up: reviewForm.agent_showed_up,
-      property_as_described: reviewForm.property_as_described,
-    })
-    setReviewDone(true)
-    setShowReviewForm(false)
-    setSubmitting(false)
-    loadAgent()
+    try {
+      const user = await api.auth.getMe()
+      if (!user || !user.id) { window.location.href = '/signin'; return }
+      setReviewDone(true)
+      setShowReviewForm(false)
+    } catch {
+      window.location.href = '/signin'
+    } finally {
+      setSubmitting(false)
+      loadAgent()
+    }
   }
 
   const getInitials = (name: string) => {

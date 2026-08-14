@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 
 export default function SignUpPage() {
   const [role, setRole] = useState('renter')
@@ -27,43 +27,22 @@ export default function SignUpPage() {
     }
     setLoading(true)
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      await api.auth.signUp({
+        firstName: form.firstName,
+        lastName: form.lastName,
         email: form.email,
+        phone: form.phone,
         password: form.password,
-        options: {
-          data: {
-            full_name: `${form.firstName} ${form.lastName}`,
-            phone: form.phone,
-            role: role,
-          }
-        }
+        role: role,
+        agencyName: form.agencyName,
+        areaOfOperation: form.area,
       })
-      if (signUpError) { setError(signUpError.message); setLoading(false); return }
-
-      // Create profile record
-      if (data.user) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          full_name: `${form.firstName} ${form.lastName}`,
-          phone: form.phone,
-          role: role,
-        })
-
-        // If agent, create agent record
-        if (role === 'agent') {
-          await supabase.from('agents').insert({
-            profile_id: data.user.id,
-            agency_name: form.agencyName,
-            area_of_operation: form.area,
-            verification_status: 'pending',
-          })
-        }
-      }
       setSuccess(true)
-    } catch (err) {
-      setError('Something went wrong. Please try again.')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   if (success) return (

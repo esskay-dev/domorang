@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 
 type Listing = {
   id: string
@@ -43,71 +43,80 @@ export default function AdminPage() {
   useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/signin?redirectTo=/admin'; return }
+    try {
+      const userRes = await api.auth.getMe()
+      if (!userRes || userRes.profile?.role !== 'admin') {
+        window.location.href = '/'
+        return
+      }
+      setProfile(userRes.profile)
 
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    if (!prof || prof.role !== 'admin') { window.location.href = '/'; return }
-    setProfile(prof)
+      const [statsRes, pendingListingsRes, pendingAgentsRes, recentListingsRes] = await Promise.all([
+        api.admin.getStats(),
+        api.admin.getPendingListings(),
+        api.admin.getPendingAgents(),
+        api.listings.getFeatured(5),
+      ])
 
-    const [
-      { data: pending },
-      { data: agents },
-      { data: recent },
-      { count: total },
-      { count: verified },
-      { count: pendingCount },
-      { count: agentTotal },
-      { count: agentVerified },
-    ] = await Promise.all([
-      supabase.from('listings').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-      supabase.from('agents').select('*, profiles(full_name, phone)').eq('verification_status', 'pending'),
-      supabase.from('listings').select('*').eq('status', 'verified').order('created_at', { ascending: false }).limit(5),
-      supabase.from('listings').select('*', { count: 'exact', head: true }),
-      supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'verified'),
-      supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-      supabase.from('agents').select('*', { count: 'exact', head: true }),
-      supabase.from('agents').select('*', { count: 'exact', head: true }).eq('verification_status', 'verified'),
-    ])
-
-    setPendingListings((pending as Listing[]) || [])
-    setPendingAgents((agents as Agent[]) || [])
-    setRecentListings((recent as Listing[]) || [])
-    setStats({
-      total: total || 0,
-      verified: verified || 0,
-      pending: pendingCount || 0,
-      agents: agentTotal || 0,
-      verifiedAgents: agentVerified || 0,
-    })
-    setLoading(false)
+      setStats({
+        total: statsRes.listings.total,
+        verified: statsRes.listings.verified,
+        pending: statsRes.listings.pending,
+        agents: statsRes.agents.total,
+        verifiedAgents: statsRes.agents.verified,
+      })
+      setPendingListings(pendingListingsRes || [])
+      setPendingAgents(pendingAgentsRes || [])
+      setRecentListings(recentListingsRes || [])
+    } catch (err) {
+      console.error('Failed to load admin data:', err)
+      window.location.href = '/signin?redirectTo=/admin'
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function approveListing(id: string) {
-    await supabase.from('listings').update({ status: 'verified' }).eq('id', id)
-    setPendingListings(prev => prev.filter(l => l.id !== id))
-    setStats(prev => ({ ...prev, pending: prev.pending - 1, verified: prev.verified + 1 }))
-    flash('✓ Listing approved and now live')
+    try {
+      await api.admin.approveListing(id)
+      setPendingListings(prev => prev.filter(l => l.id !== id))
+      setStats(prev => ({ ...prev, pending: prev.pending - 1, verified: prev.verified + 1 }))
+      flash('✓ Listing approved and now live')
+    } catch (err: any) {
+      flash('✗ ' + (err.message || 'Action failed'))
+    }
   }
 
   async function rejectListing(id: string) {
-    await supabase.from('listings').update({ status: 'rejected' }).eq('id', id)
-    setPendingListings(prev => prev.filter(l => l.id !== id))
-    setStats(prev => ({ ...prev, pending: prev.pending - 1 }))
-    flash('✗ Listing rejected')
+    try {
+      await api.admin.rejectListing(id)
+      setPendingListings(prev => prev.filter(l => l.id !== id))
+      setStats(prev => ({ ...prev, pending: prev.pending - 1 }))
+      flash('✗ Listing rejected')
+    } catch (err: any) {
+      flash('✗ ' + (err.message || 'Action failed'))
+    }
   }
 
   async function verifyAgent(id: string) {
-    await supabase.from('agents').update({ verification_status: 'verified' }).eq('id', id)
-    setPendingAgents(prev => prev.filter(a => a.id !== id))
-    setStats(prev => ({ ...prev, verifiedAgents: prev.verifiedAgents + 1 }))
-    flash('✓ Agent verified')
+    try {
+      await api.admin.verifyAgent(id)
+      setPendingAgents(prev => prev.filter(a => a.id !== id))
+      setStats(prev => ({ ...prev, verifiedAgents: prev.verifiedAgents + 1 }))
+      flash('✓ Agent verified')
+    } catch (err: any) {
+      flash('✗ ' + (err.message || 'Action failed'))
+    }
   }
 
   async function rejectAgent(id: string) {
-    await supabase.from('agents').update({ verification_status: 'rejected' }).eq('id', id)
-    setPendingAgents(prev => prev.filter(a => a.id !== id))
-    flash('✗ Agent rejected')
+    try {
+      await api.admin.rejectAgent(id)
+      setPendingAgents(prev => prev.filter(a => a.id !== id))
+      flash('✗ Agent rejected')
+    } catch (err: any) {
+      flash('✗ ' + (err.message || 'Action failed'))
+    }
   }
 
   function flash(msg: string) {

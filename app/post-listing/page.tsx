@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import Navbar from '../components/Navbar'
 import { Home, Key, Check, MapPin, AlertTriangle, Camera, X, PartyPopper, ArrowLeft, ArrowRight } from 'lucide-react'
 
@@ -197,73 +197,43 @@ export default function PostListingPage() {
     setError('')
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/signin'); return }
-
-      const { data: agent } = await supabase
-        .from('agents').select('*').eq('profile_id', user.id).single()
-
-      if (!agent) {
-        setError('You need an agent account to post listings.')
-        setLoading(false); return
+      let imageUrls: string[] = []
+      if (images.length > 0) {
+        try {
+          const uploadRes = await api.uploads.uploadImages(images)
+          imageUrls = uploadRes.urls || []
+        } catch (uploadErr: any) {
+          setError(`Photo upload failed: ${uploadErr.message || 'Error uploading files'}`)
+          setLoading(false)
+          return
+        }
       }
 
-      const imageUrls: string[] = []
-for (const image of images) {
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${image.name.replace(/\s/g, '-')}`
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('Listing-images')
-    .upload(fileName, image, { cacheControl: '3600', upsert: false })
-  
-  if (uploadError) {
-    console.error('Upload error:', uploadError)
-    setError(`Photo upload failed: ${uploadError.message}`)
-    setLoading(false)
-    return
-  }
-  
-  if (uploadData) {
-    const { data: urlData } = supabase.storage
-      .from('Listing-images')
-      .getPublicUrl(uploadData.path)
-    imageUrls.push(urlData.publicUrl)
-  }
-}
-
-if (imageUrls.length === 0 && images.length > 0) {
-  setError('Photos failed to upload. Please try again.')
-  setLoading(false)
-  return
-}
-
-      const { error: insertError } = await supabase.from('listings').insert({
-        agent_id: agent.id,
+      await api.listings.create({
         title: form.title,
         description: form.description,
         listing_type: form.listing_type,
         property_type: form.property_type,
+        condition: form.condition || undefined,
         price: parseFloat(form.price),
-        bedrooms: parseInt(form.bedrooms),
-        bathrooms: parseInt(form.bathrooms),
-        toilets: parseInt(form.toilets),
-        size_sqft: parseInt(form.size_sqft),
-        parking: parseInt(form.parking),
+        bedrooms: parseInt(form.bedrooms) || 0,
+        bathrooms: parseInt(form.bathrooms) || 0,
+        toilets: parseInt(form.toilets) || 0,
+        size_sqft: parseInt(form.size_sqft) || undefined,
+        parking: parseInt(form.parking) || undefined,
         area: form.area,
-        street_address: form.street_address,
-        city: 'Abuja',
+        street_address: form.street_address || undefined,
         amenities: selectedAmenities,
         images: imageUrls,
-        video_url: form.video_url,
-        inspection_fee: parseFloat(form.inspection_fee) || null,
-        latitude: form.latitude,
-        longitude: form.longitude,
-        status: 'pending',
+        video_url: form.video_url || undefined,
+        inspection_fee: parseFloat(form.inspection_fee) || undefined,
+        latitude: form.latitude || undefined,
+        longitude: form.longitude || undefined,
       })
 
-      if (insertError) { setError(insertError.message); setLoading(false); return }
       setSuccess(true)
-    } catch (err) {
-      setError('Something went wrong. Please try again.')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
     }
     setLoading(false)
   }

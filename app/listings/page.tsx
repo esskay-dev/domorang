@@ -1,15 +1,14 @@
 import Navbar from '../components/Navbar'
 import ListingCard from '../components/ListingCard'
 import ListingsFilters from '../components/ListingsFilters'
-import { createSupabaseServer } from '../../lib/supabase-server'
+import { api } from '../../lib/api'
 import Link from 'next/link'
 import { Home } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 9
 
 export default async function ListingsPage({ searchParams }: { searchParams: Promise<any> }) {
-  const supabase = await createSupabaseServer()
-  const resolvedParams = await searchParams
+  const resolvedParams = (await searchParams) || {}
   const type = resolvedParams?.type || 'all'
 
   const selectedAreas: string[] = resolvedParams?.area
@@ -23,22 +22,13 @@ export default async function ListingsPage({ searchParams }: { searchParams: Pro
   const bedroomsParam: string | undefined = resolvedParams?.bedrooms
   const currentPage = Math.max(1, parseInt(resolvedParams?.page) || 1)
 
-  let query = supabase
-    .from('listings')
-    .select('*')
-    .eq('status', 'verified')
-    .order('created_at', { ascending: false })
-
-  if (type !== 'all') query = query.eq('listing_type', type)
-  if (selectedAreas.length) query = query.in('area', selectedAreas)
-  if (minPrice !== undefined) query = query.gte('price', minPrice)
-  if (maxPrice !== undefined) query = query.lte('price', maxPrice)
-  if (bedroomsParam) {
-    if (bedroomsParam === '4+') query = query.gte('bedrooms', 4)
-    else query = query.eq('bedrooms', parseInt(bedroomsParam))
+  let listings: any[] = []
+  try {
+    const res = await api.listings.getAll(resolvedParams)
+    listings = res?.listings || []
+  } catch (err) {
+    console.error('Failed to fetch listings from NestJS server:', err)
   }
-
-  const { data: listings } = await query
 
   const allPlaceholders = [
     { id: '1', title: 'Modern 3 Bedroom Flat', price: 2500000, listing_type: 'rent', bedrooms: 3, bathrooms: 2, size_sqft: 1200, area: 'Wuse 2', status: 'verified', images: ['https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=500&q=80'] },

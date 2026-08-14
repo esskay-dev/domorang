@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '../../components/Navbar'
-import { supabase } from '../../../lib/supabase'
+import { api } from '../../../lib/api'
 
 export default function AgentProfilePage() {
   const router = useRouter()
@@ -25,35 +25,27 @@ export default function AgentProfilePage() {
 
   useEffect(() => {
     async function load() {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const session = sessionData.session
-      if (!session) { router.push('/signin'); return }
+      try {
+        const userRes = await api.auth.getMe()
+        if (!userRes || !userRes.id) { router.push('/signin'); return }
+        if (userRes.profile?.role !== 'agent') { router.push('/'); return }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, phone, role')
-        .eq('id', session.user.id)
-        .single()
-
-      if (profile?.role !== 'agent') { router.push('/'); return }
-
-      const { data: agent } = await supabase
-        .from('agents')
-        .select('agency_name, area_of_operation, bio, instagram_url, website_url')
-        .eq('profile_id', session.user.id)
-        .single()
-
-      setUserId(session.user.id)
-      setForm({
-        fullName: profile?.full_name || '',
-        phone: profile?.phone || '',
-        agencyName: agent?.agency_name || '',
-        area: agent?.area_of_operation || '',
-        bio: agent?.bio || '',
-        instagramUrl: agent?.instagram_url || '',
-        websiteUrl: agent?.website_url || '',
-      })
-      setLoading(false)
+        setUserId(userRes.id)
+        setForm({
+          fullName: userRes.profile?.full_name || '',
+          phone: userRes.profile?.phone || '',
+          agencyName: userRes.agent?.agency_name || '',
+          area: userRes.agent?.area_of_operation || '',
+          bio: userRes.agent?.bio || '',
+          instagramUrl: userRes.agent?.instagram_url || '',
+          websiteUrl: userRes.agent?.website_url || '',
+        })
+      } catch (err) {
+        console.error('Failed to load agent profile:', err)
+        router.push('/signin')
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [router])
@@ -68,28 +60,26 @@ export default function AgentProfilePage() {
     setSuccess(false)
     setSaving(true)
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .update({ full_name: form.fullName, phone: form.phone })
-      .eq('id', userId)
+    try {
+      await api.users.updateMe({
+        full_name: form.fullName,
+        phone: form.phone,
+      })
 
-    const { error: agentError } = await supabase
-      .from('agents')
-      .update({
+      await api.agents.updateProfile({
         agency_name: form.agencyName,
         area_of_operation: form.area,
         bio: form.bio,
         instagram_url: form.instagramUrl,
         website_url: form.websiteUrl,
       })
-      .eq('profile_id', userId)
 
-    if (profileError || agentError) {
-      setError((profileError || agentError)?.message || 'Something went wrong. Please try again.')
-    } else {
       setSuccess(true)
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   if (loading) {

@@ -1,5 +1,5 @@
 import Navbar from '../../components/Navbar'
-import { createSupabaseServer } from '../../../lib/supabase-server'
+import { api } from '../../../lib/api'
 import Link from 'next/link'
 import ListingGallery from '../../components/ListingGallery'
 import ListingVideo from '../../components/ListingVideo'
@@ -23,24 +23,15 @@ import {
 } from 'lucide-react'
 
 export default async function ListingDetailPage({ params }: { params: Promise<any> }) {
-  const supabase = await createSupabaseServer()
   const resolvedParams = await params
-
-  const { data: listing } = await supabase
-    .from('listings')
-    .select('*, agents(*)')
-    .eq('id', resolvedParams.id)
-    .single()
-
-  let agentProfile: { full_name: string; phone: string } | null = null
-  if (listing?.agents?.profile_id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, phone')
-      .eq('id', listing.agents.profile_id)
-      .single()
-    agentProfile = profile
+  let listing: any = null
+  try {
+    listing = await api.listings.getOne(resolvedParams.id)
+  } catch (err) {
+    console.error('Failed to fetch listing detail from NestJS API:', err)
   }
+
+  const agentProfile = listing?.agentProfile || listing?.agent?.profile || null
 
   const display = listing || {
     id: resolvedParams.id,
